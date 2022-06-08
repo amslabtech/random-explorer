@@ -1,0 +1,5 @@
+<launch>
+    <node name="random_explorer" pkg="random_explorer" type="random_explorer_node" output="screen">
+        <remap from="/odom" to="/whill/odom"/>
+    </node>
+</launch>
