@@ -39,28 +39,29 @@ private:
 class RandomExplorer {
 public:
     RandomExplorer(Param param);
+    static int count_free_grid(const nav_msgs::OccupancyGrid& localmap, const double angle);
+    static bool is_close_angle(const double a, const double b, const double torelance);
     void get_localmap(void);
-    int count_free_grid(const nav_msgs::OccupancyGrid& localmap, const double angle);
     void search_free_spaces(void);
     void decide_next_goal(void);
     void process(void);
 
 private:
     void localmap_callback_(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-    // void odometry_callback_(const nav_msgs::Odometry::ConstPtr& msg);
+    void odometry_callback_(const nav_msgs::Odometry::ConstPtr& msg);
 
+    const Param param_;
     ros::NodeHandle nh_;
     ros::Subscriber sub_localmap_;
-    // ros::Subscriber sub_odometry_;
+    ros::Subscriber sub_odometry_;
     ros::Publisher pub_local_goal_;
-    const Param param_;
     std::mt19937 mt_;
 
     nav_msgs::OccupancyGrid localmap_msg_;
     nav_msgs::OccupancyGrid localmap_;
     geometry_msgs::PoseStamped local_goal_;
     DirectionGroups direction_groups_;
-    // tf2::Quaternion prev_quat_;
+    tf2::Quaternion prev_quat_;
     double prev_angle_;
 };
 } // namespace random_explorer
