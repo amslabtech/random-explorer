@@ -1,0 +1,11 @@
+<launch>
+    <node name="random_explorer" pkg="random_explorer" type="random_explorer_node" output="screen">
+        <remap from="/odom" to="/whill/odom"/>
+        <remap from="/local_map" to="/local_map"/>
+        <rosparam>
+            hz: 10
+            n_angle_samples: 360
+            n_direction_groups: 8
+        </rosparam>
+    </node>
+</launch>
