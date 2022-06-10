@@ -54,3 +54,4 @@ CATKIN_IGNORE
 .cache
 .vscode
 compile_commands.json
+launch.json
