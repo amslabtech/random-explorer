@@ -5,8 +5,8 @@
         <rosparam>
             hz: 10
             n_angle_samples: 360
-            n_direction_groups: 8
-            timer_duration: 5
+            n_direction_groups: 16
+            goal_tolerance: 3.0
         </rosparam>
     </node>
 </launch>
