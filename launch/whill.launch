@@ -4,14 +4,16 @@
         <rosparam>
             hz: 10
             laser_names:
-                - velodyne
-                - front_hokuyo
                 - back_hokuyo
+                - front_hokuyo
+                - velodyne
             map_height: 10
             map_width: 10
             map_resolution: 0.05
         </rosparam>
-        <remap from="/velodyne/scan"/>
+        <remap from="/velodyne/scan" to="/scan"/>
+        <remap from="/front_hokuyo/scan" to="/front_hokuyo/scan"/>
+        <remap from="/back_hokuyo/scan" to="/back_hokuyo/scan"/>
         <remap from="/localmap" to="/localmap"/>
     </node>
     <node pkg="dwa_planner" type="dwa_planner" name="dwa_planner" ns="local_planner">
