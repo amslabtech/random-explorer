@@ -1,7 +1,6 @@
 #ifndef __RANDOM_EXPLORER_H__
 #define __RANDOM_EXPLORER_H__
 
-#include "tf2/LinearMath/Transform.h"
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Odometry.h>
@@ -14,6 +13,7 @@ struct Param {
     int hz;
     int n_angle_samples;
     int n_direction_groups;
+    double directon_group_accept_ratio;
     double goal_torelance;
 };
 
@@ -27,7 +27,7 @@ struct DirectionGroup {
 class DirectionGroups {
 public:
     DirectionGroups(Param param);
-    std::vector<double>& get_angles_at(const int id);
+    std::vector<double> get_angles_at(const int id);
     void set_free_grid_count_at(const int id, const int free_space_count);
     int get_free_grid_count_at(const int id);
     double get_center_angle_at(const int id);
@@ -42,12 +42,12 @@ class RandomExplorer {
 public:
     RandomExplorer(Param param);
     static bool is_close_angle(const double a, const double b, const double torelance);
-    void get_localmap(void);
     bool reached_goal(void);
     bool is_valid_index(const int px, const int py);
     bool is_free_space(double x, double y);
     bool should_search_free_space(void);
     int count_free_grid(const double angle);
+    std::vector<int> calc_goal_candidates(void);
     void search_free_spaces(void);
     void decide_next_goal(void);
     void process(void);
@@ -63,7 +63,6 @@ private:
     ros::Publisher pub_local_goal_;
     std::mt19937 mt_;
 
-    nav_msgs::OccupancyGrid localmap_msg_;
     nav_msgs::OccupancyGrid localmap_;
     geometry_msgs::PoseStamped local_goal_;
     DirectionGroups direction_groups_;

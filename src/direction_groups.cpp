@@ -23,7 +23,7 @@ DirectionGroups::DirectionGroups(Param param)
     }
 }
 
-std::vector<double>& DirectionGroups::get_angles_at(const int id)
+std::vector<double> DirectionGroups::get_angles_at(const int id)
 {
     return direction_groups_[id].angles;
 }

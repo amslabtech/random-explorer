@@ -1,8 +1,4 @@
-#include <random>
 #include <random_explorer/random_explorer.h>
-#include <tf2/LinearMath/Transform.h>
-#include <tf2/convert.h>
-#include <tf2/utils.h>
 
 namespace random_explorer {
 RandomExplorer::RandomExplorer(Param param)
@@ -14,9 +10,9 @@ RandomExplorer::RandomExplorer(Param param)
     , prev_angle_(0.0)
 {
     sub_localmap_ = nh_.subscribe("/localmap", 1, &RandomExplorer::localmap_callback_,
-                                  this, ros::TransportHints().reliable().tcpNoDelay());
+        this, ros::TransportHints().reliable().tcpNoDelay());
     sub_odometry_ = nh_.subscribe("/odom", 1, &RandomExplorer::odometry_callback_,
-                                  this, ros::TransportHints().reliable().tcpNoDelay());
+        this, ros::TransportHints().reliable().tcpNoDelay());
     pub_local_goal_ = nh_.advertise<geometry_msgs::PoseStamped>("/local_goal", 2);
 
     local_goal_.pose.orientation.w = 1.0;
@@ -32,7 +28,7 @@ void RandomExplorer::localmap_callback_(const nav_msgs::OccupancyGrid::ConstPtr&
         has_localmap_ = true;
     }
 
-    localmap_msg_ = *msg;
+    localmap_ = *msg;
 }
 
 void RandomExplorer::odometry_callback_(const nav_msgs::Odometry::ConstPtr& msg)
@@ -61,11 +57,6 @@ bool RandomExplorer::is_close_angle(const double a, const double b, const double
 {
     const double diff = std::abs(a - b);
     return diff < torelance;
-}
-
-void RandomExplorer::get_localmap(void)
-{
-    localmap_ = localmap_msg_;
 }
 
 bool RandomExplorer::reached_goal(void)
@@ -136,6 +127,32 @@ int RandomExplorer::count_free_grid(const double angle)
     return count;
 }
 
+std::vector<int> RandomExplorer::calc_goal_candidates(void)
+{
+    std::vector<int> goal_candidates_of_front;
+    std::vector<int> goal_candidates_of_back;
+    int n_candidates_of_front = 0;
+
+    for (int i = 0; i < param_.n_direction_groups; i++) {
+        const bool use_this_group = static_cast<double>(i) / param_.n_direction_groups
+            <= param_.directon_group_accept_ratio;
+        const bool is_front = -M_PI / 2 <= direction_groups_.get_center_angle_at(i)
+            && direction_groups_.get_center_angle_at(i) <= M_PI / 2;
+        if (use_this_group && is_front) {
+            n_candidates_of_front++;
+        }
+
+        goal_candidates_of_front.push_back(use_this_group && is_front);
+        goal_candidates_of_back.push_back(use_this_group && !is_front);
+    }
+
+    if (n_candidates_of_front == 0) {
+        return goal_candidates_of_back;
+    } else {
+        return goal_candidates_of_front;
+    }
+}
+
 void RandomExplorer::search_free_spaces(void)
 {
     for (int i = 0; i < param_.n_direction_groups; i++) {
@@ -151,28 +168,28 @@ void RandomExplorer::search_free_spaces(void)
 void RandomExplorer::decide_next_goal(void)
 {
     direction_groups_.sort_by_free_grid_count();
-    std::vector<int> counts;
-    for (int i = 0; i < param_.n_direction_groups; i++) {
-        counts.push_back(direction_groups_.get_free_grid_count_at(i));
-    }
+    std::vector<int> goal_candidates = calc_goal_candidates();
 
-    std::discrete_distribution<int> discrete_dist(counts.begin(), counts.end());
+    std::discrete_distribution<int> discrete_dist(
+        goal_candidates.begin(), goal_candidates.end());
     std::uniform_real_distribution<double> uniform_dist(
-            param_.goal_torelance, localmap_.info.width * localmap_.info.resolution / 2.0);
+        param_.goal_torelance, localmap_.info.width * localmap_.info.resolution / 2.0);
 
     const double goal_distance = uniform_dist(mt_);
     const double drawn_angle = direction_groups_.get_center_angle_at(discrete_dist(mt_));
     const double x = goal_distance * std::cos(drawn_angle);
     const double y = goal_distance * std::sin(drawn_angle);
     if (!is_free_space(x, y)) {
-        decide_next_goal();
+        return;
     }
 
-    tf2::Quaternion quat;
-    quat.setRPY(0.0, 0.0, drawn_angle);
     local_goal_.pose.position.x = x;
     local_goal_.pose.position.y = y;
-    local_goal_.pose.orientation = tf2::toMsg(quat);
+    local_goal_.pose.orientation = [=] {
+        tf2::Quaternion quat;
+        quat.setRPY(0.0, 0.0, drawn_angle);
+        return tf2::toMsg(quat);
+    }();
 }
 
 void RandomExplorer::process(void)
@@ -182,10 +199,9 @@ void RandomExplorer::process(void)
     while (ros::ok()) {
         ros::spinOnce();
         loop_rate.sleep();
-
         local_goal_.header.stamp = ros::Time::now();
         pub_local_goal_.publish(local_goal_);
-        get_localmap();
+
         if (!(has_localmap_ && has_odom_)) {
             continue;
         }

@@ -6,6 +6,7 @@
             hz: 10
             n_angle_samples: 360
             n_direction_groups: 16
+            directon_group_accept_ratio: 0.5
             goal_tolerance: 3.0
         </rosparam>
     </node>
