@@ -8,7 +8,9 @@ DirectionGroups::DirectionGroups(Param param)
     const double angle_step = 2.0 * M_PI / param_.n_angle_samples / param_.n_direction_groups;
 
     for (int i = 0; i < param_.n_direction_groups; i++) {
-        const double center_angle = 2.0 * M_PI * i / param_.n_direction_groups;
+        const double center_angle_untransformed = 2.0 * M_PI * i / param_.n_direction_groups;
+        const double center_angle = std::atan2(
+            std::sin(center_angle_untransformed), std::cos(center_angle_untransformed));
         const double start_angle = center_angle - angle_range / 2.0;
         const double end_angle = center_angle + angle_range / 2.0;
         std::vector<double> angles;
